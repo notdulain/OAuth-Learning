@@ -1,45 +1,83 @@
-# API Foundations
+# API Basics - Understanding the Foundation
 
-This phase gives you the vocabulary you need to reason about the OAuth stack you will build later. Focus on understanding how HTTP works, how to model resources, and how to return predictable responses that clients can rely on.
+This document explains how APIs work using simple language and practical examples. By the end, you'll understand how to build reliable APIs that follow industry standards.
 
-## REST in a Nutshell
+## What is REST?
 
-- **Resources** represent nouns in your domain (`/users`, `/products/42/reviews`).
-- **Representations** are the JSON (or XML, etc.) documents sent back and forth.
-- **Uniform interface** means you reuse the same HTTP methods everywhere:
+REST (Representational State Transfer) is a way to design APIs using simple HTTP requests. Think of it like ordering at a restaurant:
 
-| Method | Typical Use Case               | Safe | Idempotent | Request Body | Response Body |
-|--------|--------------------------------|------|------------|--------------|----------------|
-| `GET`  | Fetch one or many resources    | ✔︎   | ✔︎         | ❌           | Often ✔︎       |
-| `POST` | Create sub-resources or actions| ❌   | ❌         | ✔︎           | ✔︎             |
-| `PUT`  | Replace an entire resource     | ❌   | ✔︎         | ✔︎           | Optional       |
-| `PATCH`| Apply a partial update         | ❌   | Depends*   | ✔︎           | Optional       |
-| `DELETE`| Remove a resource             | ❌   | ✔︎         | Usually ❌   | Optional       |
+- **Resources** are the items on the menu (users, products, orders)
+- **HTTP Methods** are the actions you can take (view, create, update, delete)
+- **Responses** are what you get back (the food, or in our case, data)
 
-\* Idempotent if you design the semantics carefully (same `PATCH` payload = same end state).
+### The Main HTTP Methods
 
-## Designing Endpoints
+Here's what each HTTP method does:
 
-1. **Name resources with plurals**: `GET /api/users`, `GET /api/products/123`.
-2. **Model relationships** with nested paths when it clarifies intent: `GET /api/products/123/reviews`.
-3. **Use query parameters** for filtering, sorting, and pagination: `/api/products?category=books&limit=10`.
-4. **Prefer nouns to verbs** in URLs; reserve verbs for rare action endpoints such as `/api/users/123/activate`.
+| Method | What It Does | Example |
+|--------|--------------|---------|
+| **GET** | Read/Fetch data | Get a list of users |
+| **POST** | Create new data | Add a new user |
+| **PUT** | Replace existing data completely | Update all user details |
+| **PATCH** | Update part of existing data | Change just the user's email |
+| **DELETE** | Remove data | Delete a user |
 
-### Request Anatomy
+**Important Properties:**
 
+- **Safe**: Doesn't change anything (only GET)
+- **Idempotent**: Doing it multiple times has the same effect as doing it once (GET, PUT, DELETE)
+
+## How to Design Good API Endpoints
+
+### Rule 1: Use Clear Names
 ```
+✅ Good: GET /api/users
+❌ Bad: GET /api/getAllUsers
+
+✅ Good: GET /api/products/123
+❌ Bad: GET /api/getProductById?id=123
+```
+
+### Rule 2: Use Plurals for Collections
+```
+✅ /api/users          (collection of users)
+✅ /api/users/42       (specific user)
+✅ /api/products       (collection of products)
+```
+
+### Rule 3: Show Relationships with Nested Paths
+```
+✅ /api/products/123/reviews    (reviews for product 123)
+✅ /api/users/42/orders         (orders for user 42)
+```
+
+### Rule 4: Use Query Parameters for Filtering
+```
+✅ /api/products?category=books&limit=10
+✅ /api/users?role=admin&sort=name
+```
+
+## Understanding HTTP Requests and Responses
+
+### A Typical Request Looks Like This:
+```http
 GET /api/products?limit=5 HTTP/1.1
 Host: api.example.com
-Authorization: Bearer <token>
+Authorization: Bearer eyJhbGc...
 Accept: application/json
 ```
 
-### Response Anatomy
+**Breaking it down:**
+- `GET` = the action we want
+- `/api/products` = what we want to access
+- `?limit=5` = we only want 5 items
+- `Authorization` = our access token (like a ticket)
+- `Accept` = we want JSON back
 
-```
+### A Typical Response Looks Like This:
+```http
 HTTP/1.1 200 OK
 Content-Type: application/json
-Cache-Control: max-age=60
 
 {
   "data": [
@@ -49,71 +87,192 @@ Cache-Control: max-age=60
       "price": 39.99
     }
   ],
-  "pagination": { "limit": 5, "next": "/api/products?limit=5&cursor=abc" }
+  "pagination": {
+    "limit": 5,
+    "next": "/api/products?limit=5&cursor=abc"
+  }
 }
 ```
 
-Be explicit about the contract: content type, response shape, and behaviors like caching.
+**Breaking it down:**
+- `200 OK` = success!
+- `Content-Type` = the response is JSON
+- `data` = the actual products
+- `pagination` = info to get the next page
 
-## Status Codes That Matter
+## HTTP Status Codes - What They Mean
 
-| Group | Purpose | Common Values |
-|-------|---------|---------------|
-| 1xx   | Informational (rare in APIs) | — |
-| 2xx   | Success | `200 OK`, `201 Created`, `204 No Content` |
-| 3xx   | Redirects | `302 Found`, `304 Not Modified` |
-| 4xx   | Client errors | `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `409 Conflict`, `429 Too Many Requests` |
-| 5xx   | Server errors | `500 Internal Server Error`, `502 Bad Gateway`, `503 Service Unavailable` |
+Think of status codes like traffic lights:
 
-Pick the most specific code you can so clients can react intelligently.
+### Success (2xx) - Green Light
+- **200 OK**: Everything worked, here's your data
+- **201 Created**: New item was created successfully
+- **204 No Content**: Success, but nothing to return
 
-## Consistent Error Handling
+### Client Errors (4xx) - Red Light (Your Fault)
+- **400 Bad Request**: You sent invalid data
+- **401 Unauthorized**: You need to login first
+- **403 Forbidden**: You're logged in, but not allowed to do this
+- **404 Not Found**: The item doesn't exist
+- **429 Too Many Requests**: Slow down! You're making too many requests
 
-Structure error payloads so the frontend, Postman scripts, and WSO2 policies can decode them easily. The [RFC 7807 Problem Details](https://www.rfc-editor.org/rfc/rfc7807) format is a good starting point:
+### Server Errors (5xx) - Red Light (Server's Fault)
+- **500 Internal Server Error**: Something broke on the server
+- **503 Service Unavailable**: Server is temporarily down
+
+## Handling Errors Properly
+
+When something goes wrong, return helpful error messages:
 
 ```json
 {
-  "type": "https://api.example.com/errors/validation-failed",
-  "title": "Validation failed",
+  "type": "validation-error",
+  "title": "Validation Failed",
   "status": 400,
-  "detail": "email must be a valid address",
-  "instance": "/api/users",
+  "detail": "The email address is not valid",
   "errors": [
-    { "field": "email", "message": "is required" }
+    {
+      "field": "email",
+      "message": "must be a valid email address"
+    }
   ]
 }
 ```
 
-## Versioning Strategies
+This helps developers understand exactly what went wrong and how to fix it.
 
-| Strategy | Example | Pros | Cons |
-|----------|---------|------|------|
-| URI segment | `/v1/users` | Easy to cache and route | URI churn, clients must migrate manually |
-| Query string | `/users?version=1` | Minimal rewiring | Harder to cache, easy to forget |
-| Header | `Accept: application/vnd.example.users+json;version=1` | Clean URLs, supports content negotiation | Requires header awareness and good documentation |
+## API Versioning - Handling Changes
 
-Pick one approach early (URI segments are the easiest while you learn) and stick with it.
+As your API grows, you'll need to make changes. Versioning lets old apps keep working while new apps use new features.
 
-## Pagination & Filtering Patterns
+### Three Common Approaches:
 
-- **Offset/limit** (`?offset=30&limit=10`) is simple but may suffer under large data sets.
-- **Cursor-based** pagination (`?cursor=abc123`) works better for real-time data.
-- Always return enough metadata (`limit`, `total`, `next` URL) so clients can chain requests.
+**1. URL Versioning (Easiest):**
+```
+/v1/users
+/v2/users
+```
 
-## Security Primer
+**2. Query Parameter:**
+```
+/users?version=1
+/users?version=2
+```
 
-- **HTTPS everywhere**—even in development, Docker can proxy TLS.
-- **Authentication**: Start with bearer tokens issued by your auth server in Phase 2.
-- **Authorization**: Enforce scopes/roles when you add `scope-check.js`.
-- **CORS**: Configure explicitly so the React client and Postman behave predictably.
-- **Rate limiting**: In Phase 5 WSO2 will enforce enterprise-grade limits.
+**3. Header Versioning:**
+```
+Accept: application/json;version=1
+```
 
-## Checklist for Phase 1
+**Recommendation**: Start with URL versioning (`/v1/users`) - it's the simplest to understand and implement.
 
-- [ ] Implement `GET /api/users` and `GET /api/products` in the resource server.
-- [ ] Return well-formed JSON with explicit status codes.
-- [ ] Document the endpoints in this repo (README, Postman collection).
-- [ ] Add at least one error scenario (e.g., `GET /api/users/:id` when the user does not exist).
-- [ ] Capture notes or questions in this document as you iterate.
+## Pagination - Handling Large Lists
 
-> **Tip:** Create sample data structures now; you will reuse them when validating scopes and claims later on.
+When you have thousands of users or products, you can't send them all at once. Use pagination:
+
+### Simple Offset/Limit Method:
+```
+GET /api/users?offset=0&limit=10    (first 10 users)
+GET /api/users?offset=10&limit=10   (next 10 users)
+```
+
+### Response Should Include Navigation:
+```json
+{
+  "data": [ /* 10 users */ ],
+  "pagination": {
+    "offset": 0,
+    "limit": 10,
+    "total": 150,
+    "next": "/api/users?offset=10&limit=10"
+  }
+}
+```
+
+## Security Basics
+
+### 1. Always Use HTTPS
+Never send passwords or tokens over plain HTTP. HTTPS encrypts everything.
+
+### 2. Use Authentication Tokens
+After login, give users a token they include in every request:
+```http
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### 3. Check Permissions
+Just because someone is logged in doesn't mean they can do everything. Check their role/permissions.
+
+### 4. Enable CORS Properly
+CORS lets browsers access your API from different domains. Configure it explicitly:
+```javascript
+// Allow requests from your React app
+Access-Control-Allow-Origin: http://localhost:3000
+```
+
+### 5. Rate Limiting
+Prevent abuse by limiting how many requests a user can make:
+```
+100 requests per hour per user
+```
+
+## Your First Implementation Tasks
+
+Start by building these two simple endpoints:
+
+### 1. Get All Users
+```
+GET /api/users
+
+Response:
+{
+  "data": [
+    { "id": 1, "name": "John", "email": "john@example.com" },
+    { "id": 2, "name": "Jane", "email": "jane@example.com" }
+  ]
+}
+```
+
+### 2. Get One User
+```
+GET /api/users/1
+
+Success Response (200):
+{
+  "id": 1,
+  "name": "John",
+  "email": "john@example.com"
+}
+
+Error Response (404):
+{
+  "error": "User not found"
+}
+```
+
+## Phase 1 Checklist
+
+Complete these tasks to finish the API basics phase:
+
+- [ ] Create `GET /api/users` endpoint that returns a list of users
+- [ ] Create `GET /api/users/:id` endpoint that returns one user
+- [ ] Create `GET /api/products` endpoint that returns a list of products
+- [ ] Return proper HTTP status codes (200 for success, 404 for not found)
+- [ ] Handle errors gracefully with clear error messages
+- [ ] Test all endpoints using Postman
+- [ ] Document your API endpoints in a README file
+
+## Key Takeaways
+
+1. **REST is simple**: Use URLs to represent resources, HTTP methods to act on them
+2. **Be consistent**: Pick naming patterns and stick to them
+3. **Use proper status codes**: Help clients understand what happened
+4. **Handle errors well**: Clear error messages save debugging time
+5. **Think about the future**: Version your API from the start
+6. **Security matters**: Always use HTTPS and validate permissions
+
+## Next Steps
+
+Once you're comfortable with basic APIs, you'll add authentication using JWT tokens in the next phase. This will let you protect your endpoints and control who can access what.
+
+Remember: The best API is one that's predictable, consistent, and easy to understand. Take your time with the basics - they're the foundation for everything else!
