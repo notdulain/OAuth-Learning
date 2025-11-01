@@ -32,5 +32,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Resource server running on http://localhost:${PORT}`);
+  console.log(`Resource server running on http://localhost:8080`);
 });
