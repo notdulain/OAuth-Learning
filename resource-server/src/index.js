@@ -10,6 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const jwtAuth = require('./middleware/jwt-auth');
+const scopeCheck = require('./middleware/scope-check');
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -19,7 +20,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // API routes
 app.use('/api/users', jwtAuth, scopeCheck(['read:users']), usersRouter);
-app.use('/api/products', productsRouter);
+app.use('/api/products', jwtAuth, scopeCheck(['read:products']), productsRouter);
 
 // 404 handler
 app.use((req, res) => {
