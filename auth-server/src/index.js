@@ -1,17 +1,22 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 
 const tokenRouter = require('./routes/token.routes');
+const authRouter = require('./routes/auth.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 const HOST_PORT = process.env.HOST_PORT || 8085;
 
 app.use(cors());
+app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+app.use('/', authRouter);
 
 app.get('/', (req, res) => {
   res.json({
