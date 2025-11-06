@@ -194,6 +194,92 @@ function renderConsent(res, { client, scopes, user, payload, justLoggedIn }) {
   </html>`);
 }
 
+function renderAuthorizationCodePage(res, { code, redirectUrl, client, scopes, state }) {
+  const safeCode = escapeHtml(code);
+  const safeRedirect = escapeHtml(redirectUrl);
+  const safeClient = escapeHtml(client?.name || client?.clientId || 'the application');
+  const stateInfo = state ? `<div class="meta"><strong>state:</strong> ${escapeHtml(state)}</div>` : '';
+  const scopeList = (scopes || [])
+    .map(scope => `<span class="scope">${escapeHtml(scope)}</span>`)
+    .join('');
+  const jsCode = JSON.stringify(code);
+
+  res.status(200).send(`<!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <title>Authorization Code Issued</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 2rem; background: #111827; color: #e5e7eb; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { background: #1f2937; padding: 2.5rem; border-radius: 16px; box-shadow: 0 20px 45px rgba(0,0,0,0.35); max-width: 560px; width: 100%; }
+        h1 { margin-top: 0; color: #f9fafb; font-size: 1.75rem; }
+        .client { color: #93c5fd; margin-bottom: 1rem; }
+        .code-box { background: #111827; border: 1px solid #374151; border-radius: 10px; padding: 1.5rem; margin: 1.5rem 0; position: relative; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 1.1rem; letter-spacing: 0.04em; }
+        .code-label { display: block; font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.12em; }
+        .copy-btn { position: absolute; top: 1rem; right: 1rem; background: #2563eb; color: white; border: none; border-radius: 6px; padding: 0.5rem 0.9rem; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+        .copy-btn:hover { background: #1d4ed8; }
+        .copy-btn.copied { background: #16a34a; }
+        .meta { font-size: 0.95rem; margin-bottom: 0.75rem; color: #9ca3af; }
+        .scopes { margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .scope { background: rgba(79, 70, 229, 0.2); color: #c7d2fe; padding: 0.35rem 0.65rem; border-radius: 9999px; font-size: 0.85rem; }
+        .actions { margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+        .actions a, .actions button { display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem 1.4rem; border-radius: 8px; text-decoration: none; font-weight: 600; cursor: pointer; border: none; transition: background 0.2s, color 0.2s; }
+        .primary { background: #2563eb; color: white; }
+        .primary:hover { background: #1d4ed8; }
+        .secondary { background: #374151; color: #e5e7eb; }
+        .secondary:hover { background: #4b5563; }
+        .helper { margin-top: 1.5rem; color: #9ca3af; font-size: 0.9rem; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Authorization Code Ready</h1>
+        <div class="client">Client: ${safeClient}</div>
+        <div class="code-box">
+          <span class="code-label">Authorization Code</span>
+          <span id="auth-code">${safeCode}</span>
+          <button id="copy-btn" class="copy-btn">Copy</button>
+        </div>
+        ${stateInfo}
+        <div class="meta"><strong>Scopes:</strong></div>
+        <div class="scopes">${scopeList}</div>
+        <div class="actions">
+          <a class="primary" href="${safeRedirect}">Continue to Client</a>
+          <button class="secondary" id="refresh-btn">Issue New Code</button>
+        </div>
+        <div class="helper">
+          The code is valid for a short time and can be used exactly once in a token request.
+        </div>
+      </div>
+      <script>
+        (function() {
+          const copyBtn = document.getElementById('copy-btn');
+          const refreshBtn = document.getElementById('refresh-btn');
+          const code = ${jsCode};
+
+          copyBtn.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(code);
+              copyBtn.textContent = 'Copied!';
+              copyBtn.classList.add('copied');
+              setTimeout(() => {
+                copyBtn.textContent = 'Copy';
+                copyBtn.classList.remove('copied');
+              }, 2000);
+            } catch (err) {
+              copyBtn.textContent = 'Press Ctrl+C';
+            }
+          });
+
+          refreshBtn.addEventListener('click', () => {
+            window.history.back();
+          });
+        })();
+      </script>
+    </body>
+  </html>`);
+}
+
 function authorizationEndpoint(req, res) {
   const {
     response_type: responseType,
@@ -203,7 +289,8 @@ function authorizationEndpoint(req, res) {
     state,
     code_challenge: codeChallenge,
     code_challenge_method: codeChallengeMethod,
-    notice
+    notice,
+    show_code: showCodeQuery
   } = req.query;
 
   if (!responseType || responseType !== 'code') {
@@ -235,6 +322,7 @@ function authorizationEndpoint(req, res) {
     queryParams.delete('notice');
   }
   const sanitizedQuery = queryParams.toString();
+  const showCode = showCodeQuery === 'true';
 
   const sid = req.cookies?.[SESSION_COOKIE_NAME];
   const session = sid ? getSession(sid) : null;
@@ -262,7 +350,8 @@ function authorizationEndpoint(req, res) {
     scope: requestedScopes.join(' '),
     state: state || '',
     code_challenge: codeChallenge || '',
-    code_challenge_method: codeChallengeMethod || ''
+    code_challenge_method: codeChallengeMethod || '',
+    show_code: showCode ? 'true' : ''
   };
 
   return renderConsent(res, {
@@ -326,7 +415,8 @@ function consentHandler(req, res) {
     scope,
     state,
     code_challenge: codeChallenge,
-    code_challenge_method: codeChallengeMethod
+    code_challenge_method: codeChallengeMethod,
+    show_code: showCode
   } = req.body || {};
 
   const sid = req.cookies?.[SESSION_COOKIE_NAME];
@@ -376,6 +466,16 @@ function consentHandler(req, res) {
   const redirectUrl = new URL(redirectUri);
   redirectUrl.searchParams.set('code', code);
   if (state) redirectUrl.searchParams.set('state', state);
+
+  if (showCode === 'true') {
+    return renderAuthorizationCodePage(res, {
+      code,
+      redirectUrl: redirectUrl.toString(),
+      client,
+      scopes,
+      state
+    });
+  }
 
   return res.redirect(redirectUrl.toString());
 }
