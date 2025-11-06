@@ -101,6 +101,11 @@ function renderLogin(res, { client, error, originalQuery }) {
       <div class="box">
         <h1>Sign in</h1>
         <p>Sign in to approve <strong>${escapeHtml(clientName)}</strong>'s access request.</p>
+        <div style="background: #f3f4f6; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem; color: #6b7280;">
+          <strong>Test Users:</strong><br/>
+          Username: <code>alice</code> or <code>bob</code><br/>
+          Password: <code>password123</code>
+        </div>
         ${error ? `<div class="error">${escapeHtml(error)}</div>` : ''}
         <form method="post" action="/login">
           <label for="username">Username</label>
