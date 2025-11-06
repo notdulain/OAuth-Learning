@@ -30,14 +30,71 @@ function renderLogin(res, { client, error, originalQuery }) {
       <meta charset="utf-8" />
       <title>Login</title>
       <style>
-        body { font-family: sans-serif; margin: 2rem; background: #f5f5f5; }
-        .box { max-width: 400px; margin: 0 auto; padding: 2rem; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        h1 { margin-top: 0; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
-        input[type="text"], input[type="password"] { width: 100%; padding: 0.5rem; margin-bottom: 1rem; border-radius: 4px; border: 1px solid #ccc; }
-        button { padding: 0.6rem 1.2rem; border: none; border-radius: 4px; background: #2563eb; color: white; cursor: pointer; font-size: 1rem; }
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+          margin: 0; 
+          padding: 2rem; 
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+        }
+        .box { 
+          max-width: 400px; 
+          margin: 0 auto; 
+          padding: 2.5rem; 
+          background: #fff; 
+          border-radius: 12px; 
+          box-shadow: 0 8px 32px rgba(0,0,0,0.2); 
+        }
+        h1 { 
+          margin-top: 0; 
+          color: #1f2937;
+          font-size: 1.75rem;
+        }
+        label { 
+          display: block; 
+          margin-bottom: 0.5rem; 
+          font-weight: 600;
+          color: #374151;
+        }
+        input[type="text"], input[type="password"] { 
+          width: 100%; 
+          padding: 0.75rem; 
+          margin-bottom: 1rem; 
+          border-radius: 6px; 
+          border: 2px solid #e5e7eb;
+          font-size: 1rem;
+          transition: border-color 0.2s;
+        }
+        input:focus {
+          outline: none;
+          border-color: #2563eb;
+        }
+        button { 
+          width: 100%;
+          padding: 0.75rem 1.2rem; 
+          border: none; 
+          border-radius: 6px; 
+          background: #2563eb; 
+          color: white; 
+          cursor: pointer; 
+          font-size: 1rem;
+          font-weight: 600;
+          transition: background 0.2s;
+        }
         button:hover { background: #1d4ed8; }
-        .error { color: #dc2626; margin-bottom: 1rem; }
+        .error { 
+          color: #dc2626; 
+          background: #fee2e2;
+          padding: 0.75rem;
+          border-radius: 6px;
+          margin-bottom: 1rem;
+          border-left: 4px solid #dc2626;
+        }
+        .info {
+          color: #4b5563;
+          margin-bottom: 1.5rem;
+          font-size: 0.95rem;
+        }
       </style>
     </head>
     <body>
@@ -63,7 +120,7 @@ function renderLogin(res, { client, error, originalQuery }) {
   </html>`);
 }
 
-function renderConsent(res, { client, scopes, user, payload }) {
+function renderConsent(res, { client, scopes, user, payload, justLoggedIn }) {
   const scopeList = scopes.map(scope => `<li>${escapeHtml(scope)}</li>`).join('');
   res.status(200).send(`<!DOCTYPE html>
   <html lang="en">
@@ -86,6 +143,7 @@ function renderConsent(res, { client, scopes, user, payload }) {
     <body>
       <div class="box">
         <h1>Authorize ${escapeHtml(client?.name || client?.clientId)}</h1>
+        ${justLoggedIn ? '<div style="padding: 0.75rem; background: #d1fae5; color: #065f46; border-radius: 4px; margin-bottom: 1rem;">Successfully signed in!</div>' : ''}
         <p class="user">Signed in as <strong>${escapeHtml(
           user.name || user.username
         )}</strong>.</p>
@@ -196,7 +254,12 @@ function authorizationEndpoint(req, res) {
     code_challenge_method: codeChallengeMethod || ''
   };
 
-  return renderConsent(res, { client, scopes: requestedScopes, user, payload });
+  return renderConsent(res, {
+    client, 
+    scopes: requestedScopes, 
+    user, 
+    payload, 
+    justLoggedIn: false });
 }
 
 function loginHandler(req, res) {
