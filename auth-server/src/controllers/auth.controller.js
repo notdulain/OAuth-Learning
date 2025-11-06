@@ -138,12 +138,17 @@ function renderConsent(res, { client, scopes, user, payload, justLoggedIn }) {
         .deny { background: #dc2626; color: white; }
         .deny:hover { background: #b91c1c; }
         .user { margin-bottom: 1rem; color: #374151; }
+        .notice { padding: 0.75rem; background: #d1fae5; color: #065f46; border-radius: 4px; margin-bottom: 1rem; border-left: 4px solid #10b981; }
       </style>
     </head>
     <body>
       <div class="box">
         <h1>Authorize ${escapeHtml(client?.name || client?.clientId)}</h1>
-        ${justLoggedIn ? '<div style="padding: 0.75rem; background: #d1fae5; color: #065f46; border-radius: 4px; margin-bottom: 1rem;">Successfully signed in!</div>' : ''}
+        ${
+          justLoggedIn
+            ? '<div class="notice">Successfully signed in!</div>'
+            : ''
+        }
         <p class="user">Signed in as <strong>${escapeHtml(
           user.name || user.username
         )}</strong>.</p>
@@ -197,7 +202,8 @@ function authorizationEndpoint(req, res) {
     scope,
     state,
     code_challenge: codeChallenge,
-    code_challenge_method: codeChallengeMethod
+    code_challenge_method: codeChallengeMethod,
+    notice
   } = req.query;
 
   if (!responseType || responseType !== 'code') {
@@ -224,12 +230,17 @@ function authorizationEndpoint(req, res) {
     req.originalUrl.includes('?') && req.originalUrl.split('?')[1]
       ? req.originalUrl.split('?')[1]
       : '';
+  const queryParams = new URLSearchParams(originalQuery);
+  if (queryParams.has('notice')) {
+    queryParams.delete('notice');
+  }
+  const sanitizedQuery = queryParams.toString();
 
   const sid = req.cookies?.[SESSION_COOKIE_NAME];
   const session = sid ? getSession(sid) : null;
 
   if (!session) {
-    return renderLogin(res, { client, originalQuery });
+    return renderLogin(res, { client, originalQuery: sanitizedQuery });
   }
 
   const user = findUserById(session.userId);
@@ -237,7 +248,7 @@ function authorizationEndpoint(req, res) {
     destroySession(sid);
     return renderLogin(res, {
       client,
-      originalQuery,
+      originalQuery: sanitizedQuery,
       error: 'Session expired. Please sign in again.'
     });
   }
@@ -245,7 +256,7 @@ function authorizationEndpoint(req, res) {
   touchSession(sid);
 
   const payload = {
-    original_query: originalQuery,
+    original_query: sanitizedQuery,
     client_id: clientId,
     redirect_uri: redirectUri,
     scope: requestedScopes.join(' '),
@@ -255,11 +266,12 @@ function authorizationEndpoint(req, res) {
   };
 
   return renderConsent(res, {
-    client, 
-    scopes: requestedScopes, 
-    user, 
-    payload, 
-    justLoggedIn: false });
+    client,
+    scopes: requestedScopes,
+    user,
+    payload,
+    justLoggedIn: Boolean(notice)
+  });
 }
 
 function loginHandler(req, res) {
@@ -295,7 +307,13 @@ function loginHandler(req, res) {
   });
 
   const redirectQuery = originalQuery || '';
-  const location = redirectQuery ? `/authorize?${redirectQuery}` : '/';
+  const base = '/authorize';
+  const notice = encodeURIComponent('Successfully signed in!');
+  const separator = redirectQuery.length > 0 ? '&' : '';
+  const location = `${base}?${redirectQuery}${separator}notice=${notice}`.replace(
+    /\?&/g,
+    '?'
+  );
   return res.redirect(location);
 }
 
