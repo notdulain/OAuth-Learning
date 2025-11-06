@@ -122,6 +122,13 @@ function renderLogin(res, { client, error, originalQuery }) {
 
 function renderConsent(res, { client, scopes, user, payload, justLoggedIn }) {
   const scopeList = scopes.map(scope => `<li>${escapeHtml(scope)}</li>`).join('');
+  const jsPayload = JSON.stringify({
+    response_type: payload.response_type || 'code',
+    client_id: payload.client_id,
+    redirect_uri: payload.redirect_uri,
+    scope: payload.scope,
+    state: payload.state
+  });
   res.status(200).send(`<!DOCTYPE html>
   <html lang="en">
     <head>
@@ -190,6 +197,14 @@ function renderConsent(res, { client, scopes, user, payload, justLoggedIn }) {
             .join('')}
         </form>
       </div>
+      <script>
+        try {
+          const payload = ${jsPayload};
+          console.log('[authorize] request params', payload);
+        } catch (err) {
+          console.warn('Failed to log authorize payload', err);
+        }
+      </script>
     </body>
   </html>`);
 }
@@ -292,6 +307,13 @@ function authorizationEndpoint(req, res) {
     notice,
     show_code: showCodeQuery
   } = req.query;
+
+  console.log('[/authorize] Request received:', {
+    responseType: req.query.response_type,
+    clientId: req.query.client_id,
+    redirectUri: req.query.redirect_uri,
+    scope: req.query.scope
+  });
 
   if (!responseType || responseType !== 'code') {
     return res
