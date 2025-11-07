@@ -128,6 +128,10 @@ function App() {
                 <dt>Scopes</dt>
                 <dd>{config.scopes.join(', ')}</dd>
               </div>
+              <div>
+                <dt>Show Code Page</dt>
+                <dd>{config.showCode ? 'true' : 'false'}</dd>
+              </div>
             </dl>
             <p className="note">
               Update <code>client-app/.env</code> to change these values.

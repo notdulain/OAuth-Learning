@@ -13,6 +13,7 @@ const REDIRECT_URI =
 const DEFAULT_SCOPES =
   process.env.REACT_APP_REQUESTED_SCOPES ||
   'read:users read:products openid profile email';
+const SHOW_CODE = process.env.REACT_APP_SHOW_CODE !== 'false';
 
 const TOKEN_STORAGE_KEY = 'oauth_tokens';
 const CODE_VERIFIER_KEY = 'oauth_code_verifier';
@@ -98,6 +99,10 @@ export async function initiateLogin(scopes = DEFAULT_SCOPES) {
     code_challenge: codeChallenge,
     code_challenge_method: 'S256'
   });
+
+  if (SHOW_CODE) {
+    params.set('show_code', 'true');
+  }
 
   window.location.assign(
     `${AUTH_SERVER_URL.replace(/\/$/, '')}/authorize?${params.toString()}`
@@ -215,6 +220,7 @@ export function getAuthConfig() {
     tokenEndpoint: TOKEN_ENDPOINT,
     clientId: CLIENT_ID,
     redirectUri: REDIRECT_URI,
-    scopes: DEFAULT_SCOPES.split(' ')
+    scopes: DEFAULT_SCOPES.split(' '),
+    showCode: SHOW_CODE
   };
 }
