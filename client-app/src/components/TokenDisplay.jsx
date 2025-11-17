@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { decodeJwt, getExpiryDate } from '../utils/jwt-decoder';
 
-function TokenCard({ label, token }) {
+function TokenCard({ label, token, description }) {
   const claims = useMemo(() => decodeJwt(token), [token]);
   const expiry = useMemo(() => getExpiryDate(token), [token]);
   return (
@@ -14,6 +14,7 @@ function TokenCard({ label, token }) {
           </span>
         )}
       </div>
+      {description && <p className="muted">{description}</p>}
       <textarea
         readOnly
         value={token || '——'}
@@ -34,8 +35,21 @@ export default function TokenDisplay({ tokens }) {
   return (
     <div className="card">
       <h2>Tokens</h2>
-      <TokenCard label="Access Token" token={tokens?.access_token} />
-      <TokenCard label="Refresh Token" token={tokens?.refresh_token} />
+      <TokenCard
+        label="Access Token"
+        token={tokens?.access_token}
+        description="Used to call the resource server (bearer token)."
+      />
+      <TokenCard
+        label="Refresh Token"
+        token={tokens?.refresh_token}
+        description="Used to obtain new access tokens when they expire."
+      />
+      <TokenCard
+        label="ID Token"
+        token={tokens?.id_token}
+        description="OpenID Connect identity token containing profile claims."
+      />
     </div>
   );
 }
