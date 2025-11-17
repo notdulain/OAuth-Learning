@@ -37,9 +37,7 @@ function generateIdToken({ userId, clientId, expiresIn = '15m', authTime }) {
     auth_time: authTime || Math.floor(Date.now() / 1000)
   });
   return jwt.sign(payload, ID_TOKEN_SECRET, {
-    expiresIn,
-    issuer: ISSUER,
-    audience: clientId
+    expiresIn
   });
 }
 
