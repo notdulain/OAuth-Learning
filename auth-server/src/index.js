@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 
 const tokenRouter = require('./routes/token.routes');
 const authRouter = require('./routes/auth.routes');
+const oidcRouter = require('./routes/oidc.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -17,6 +18,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.use('/', authRouter);
+app.use('/', oidcRouter);
 
 app.get('/', (req, res) => {
   res.json({

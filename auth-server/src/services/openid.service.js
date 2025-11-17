@@ -23,6 +23,7 @@ function buildClaims(user, clientId, overrides = {}) {
     name: user.name,
     preferred_username: user.username,
     email: user.email,
+    email_verified: true,
     ...overrides
   };
 }
@@ -41,6 +42,32 @@ function generateIdToken({ userId, clientId, expiresIn = '15m', authTime }) {
   });
 }
 
+function getUserInfo(userId, scopeString = '') {
+  const user = findUserById(userId);
+  if (!user) return null;
+
+  const scopes = scopeString.split(/\s+/).filter(Boolean);
+  const baseClaims = {
+    sub: user.id,
+    name: user.name,
+    preferred_username: user.username
+  };
+
+  if (scopes.includes('email')) {
+    baseClaims.email = user.email;
+    baseClaims.email_verified = true;
+  }
+
+  if (scopes.includes('profile')) {
+    baseClaims.family_name = user.name.split(' ').slice(-1)[0];
+    baseClaims.given_name = user.name.split(' ').slice(0, -1).join(' ');
+  }
+
+  return baseClaims;
+}
+
 module.exports = {
-  generateIdToken
+  generateIdToken,
+  getUserInfo,
+  buildClaims
 };
