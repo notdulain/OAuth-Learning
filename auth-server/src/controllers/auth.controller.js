@@ -378,6 +378,7 @@ function authorizationEndpoint(req, res) {
     state: state || '',
     code_challenge: codeChallenge || '',
     code_challenge_method: codeChallengeMethod || '',
+    response_type: responseType,
     show_code: showCode ? 'true' : ''
   };
 

@@ -4,6 +4,7 @@ const {
   generateRefreshToken,
   verifyToken
 } = require('../services/jwt.service');
+const { generateIdToken } = require('../services/openid.service');
 const { findUserById } = require('../config/users');
 const {
   consumeAuthorizationCode
@@ -61,7 +62,8 @@ function verifyPkce(codeChallenge, method, codeVerifier) {
 function buildTokenResponse({
   accessToken,
   refreshToken,
-  scope
+  scope,
+  idToken
 }) {
   const response = {
     access_token: accessToken,
@@ -74,7 +76,16 @@ function buildTokenResponse({
     response.refresh_token = refreshToken;
   }
 
+  if (idToken) {
+    response.id_token = idToken;
+  }
+
   return response;
+}
+
+function includesOpenId(scope) {
+  const scopes = toScopeArray(scope);
+  return scopes.includes('openid');
 }
 
 function handleClientCredentials(req, res) {
@@ -149,6 +160,7 @@ function handleAuthorizationCode(req, res) {
       .json({ error: 'invalid_grant', error_description: 'User no longer exists' });
   }
 
+  const authTime = Math.floor((authCode.createdAt || Date.now()) / 1000);
   const accessToken = generateAccessToken({
     sub: user.id,
     scope: authCode.scope,
@@ -166,15 +178,26 @@ function handleAuthorizationCode(req, res) {
     claims: {
       client: client.clientId,
       scope: authCode.scope.join(' '),
-      grant: 'authorization_code'
+      grant: 'authorization_code',
+      auth_time: authTime
     }
   });
+
+  let idToken;
+  if (includesOpenId(authCode.scope)) {
+    idToken = generateIdToken({
+      userId: user.id,
+      clientId: client.clientId,
+      authTime
+    });
+  }
 
   return res.json(
     buildTokenResponse({
       accessToken,
       refreshToken,
-      scope: authCode.scope
+      scope: authCode.scope,
+      idToken
     })
   );
 }
@@ -240,15 +263,26 @@ function handleRefreshToken(req, res) {
     claims: {
       client: client.clientId,
       scope: scopesToIssue.join(' '),
-      grant: 'refresh_token'
+      grant: 'refresh_token',
+      auth_time: decoded.auth_time || Math.floor(Date.now() / 1000)
     }
   });
+
+  let idToken;
+  if (includesOpenId(scopesToIssue)) {
+    idToken = generateIdToken({
+      userId: user.id,
+      clientId: client.clientId,
+      authTime: decoded.auth_time || Math.floor(Date.now() / 1000)
+    });
+  }
 
   return res.json(
     buildTokenResponse({
       accessToken,
       refreshToken: nextRefreshToken,
-      scope: scopesToIssue
+      scope: scopesToIssue,
+      idToken
     })
   );
 }

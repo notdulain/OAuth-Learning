@@ -6,7 +6,7 @@ const SESSION_TTL_SECONDS = Number(process.env.SESSION_TTL || 3600);
 const AUTH_CODE_TTL_SECONDS = Number(process.env.AUTH_CODE_TTL || 300);
 
 const sessions = new Map(); // sid -> { userId, expiresAt }
-const authorizationCodes = new Map(); // code -> { clientId, redirectUri, scope, userId, codeChallenge, codeChallengeMethod, expiresAt }
+const authorizationCodes = new Map(); // code -> { clientId, redirectUri, scope, userId, codeChallenge, codeChallengeMethod, createdAt, expiresAt }
 
 function findClientById(clientId) {
   return clients.find(client => client.clientId === clientId);
@@ -73,6 +73,7 @@ function createAuthorizationCode({
     userId,
     codeChallenge,
     codeChallengeMethod,
+    createdAt: Date.now(),
     expiresAt
   });
   return { code, expiresAt };
