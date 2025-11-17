@@ -59,27 +59,27 @@ export function clearTokens() {
 }
 
 function storeVerifier(verifier) {
-  sessionStorage.setItem(CODE_VERIFIER_KEY, verifier);
+  localStorage.setItem(CODE_VERIFIER_KEY, verifier);
 }
 
 function getVerifier() {
-  return sessionStorage.getItem(CODE_VERIFIER_KEY);
+  return localStorage.getItem(CODE_VERIFIER_KEY);
 }
 
 function clearVerifier() {
-  sessionStorage.removeItem(CODE_VERIFIER_KEY);
+  localStorage.removeItem(CODE_VERIFIER_KEY);
 }
 
 function storeState(state) {
-  sessionStorage.setItem(OAUTH_STATE_KEY, state);
+  localStorage.setItem(OAUTH_STATE_KEY, state);
 }
 
 function getState() {
-  return sessionStorage.getItem(OAUTH_STATE_KEY);
+  return localStorage.getItem(OAUTH_STATE_KEY);
 }
 
 function clearState() {
-  sessionStorage.removeItem(OAUTH_STATE_KEY);
+  localStorage.removeItem(OAUTH_STATE_KEY);
 }
 
 export async function initiateLogin(scopes = DEFAULT_SCOPES) {
@@ -104,9 +104,15 @@ export async function initiateLogin(scopes = DEFAULT_SCOPES) {
     params.set('show_code', 'true');
   }
 
-  window.location.assign(
-    `${AUTH_SERVER_URL.replace(/\/$/, '')}/authorize?${params.toString()}`
-  );
+  const authorizeUrl = `${AUTH_SERVER_URL.replace(
+    /\/$/,
+    ''
+  )}/authorize?${params.toString()}`;
+
+  const popup = window.open(authorizeUrl, '_blank', 'noopener,noreferrer');
+  if (!popup) {
+    window.location.assign(authorizeUrl);
+  }
 }
 
 async function exchangeCodeForTokens(code, codeVerifier) {

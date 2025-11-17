@@ -264,7 +264,7 @@ function renderAuthorizationCodePage(res, { code, redirectUrl, client, scopes, s
         <div class="meta"><strong>Scopes:</strong></div>
         <div class="scopes">${scopeList}</div>
         <div class="actions">
-          <a class="primary" href="${safeRedirect}">Continue to Client</a>
+          <a class="primary" href="${safeRedirect}" target="_blank" rel="noopener noreferrer">Continue to Client</a>
           <button class="secondary" id="refresh-btn">Issue New Code</button>
         </div>
         <div class="helper">
