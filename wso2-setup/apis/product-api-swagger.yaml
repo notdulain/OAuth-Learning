@@ -1,0 +1,72 @@
+openapi: 3.0.1
+info:
+  title: Product API
+  version: 1.0.0
+servers:
+  - url: https://localhost:8243/product-api/v1
+paths:
+  /products:
+    get:
+      summary: List products
+      operationId: listProducts
+      security:
+        - default: [read:products]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+  /products/{id}:
+    get:
+      summary: Get product by ID
+      operationId: getProductById
+      security:
+        - default: [read:products]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+components:
+  securitySchemes:
+    default:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://localhost:8085/authorize
+          tokenUrl: https://localhost:8085/token
+          scopes:
+            read:products: Read product data
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+          format: float
+        currency:
+          type: string
