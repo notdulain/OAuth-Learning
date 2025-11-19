@@ -1,0 +1,66 @@
+[server]
+hostname = "localhost"
+mode = "single"
+base_path = "https://localhost:9443"
+offset = 0
+
+[super_admin]
+username = "admin"
+password = "admin"
+create_admin_account = true
+
+[transport.https.properties]
+proxyPort = 9443
+
+[apim]
+analytics_enabled = false
+
+[[apim.gateway.environment]]
+name = "Default"
+type = "hybrid"
+display_name = "Default"
+description = "Primary gateway environment"
+service_url = "https://localhost:9443/services/"
+username= "${super_admin.username}"
+password= "${super_admin.password}"
+ws_endpoint = "ws://localhost:9099"
+wss_endpoint = "wss://localhost:8099"
+http_endpoint = "http://localhost:8280"
+https_endpoint = "https://localhost:8243"
+
+[apim.key_manager]
+service_url = "https://localhost:9443/services/"
+username = "${super_admin.username}"
+password = "${super_admin.password}"
+data_provider_tenant_domain = "carbon.super"
+
+[database.apim_db]
+type = "h2"
+url = "jdbc:h2:/home/wso2carbon/wso2am-4.2.0/repository/database/WSO2AM_DB;DB_CLOSE_ON_EXIT=FALSE"
+username = "wso2carbon"
+password = "wso2carbon"
+pool_options.maxActive = 80
+
+[database.shared_db]
+type = "h2"
+url = "jdbc:h2:/home/wso2carbon/wso2am-4.2.0/repository/database/WSO2SHARED_DB;DB_CLOSE_ON_EXIT=FALSE"
+username = "wso2carbon"
+password = "wso2carbon"
+
+[[event_listener]]
+id = "TokenRevocation"
+class = "org.wso2.carbon.identity.oauth.listener.TokenRevocationNotifier"
+order = "1"
+enable = true
+
+[apim.devportal]
+url = "https://localhost:9443/devportal"
+
+[apim.publisher]
+url = "https://localhost:9443/publisher"
+
+[cors]
+allowed_origins = "*"
+allowed_methods = ["GET","POST","PUT","DELETE","PATCH","OPTIONS"]
+allowed_headers = ["authorization","Access-Control-Allow-Origin","Content-Type","SOAPAction"]
+allow_credentials = true

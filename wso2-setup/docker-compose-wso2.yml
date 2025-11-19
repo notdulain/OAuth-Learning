@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  wso2am:
+    image: wso2/wso2am:4.6.0-rocky
+    container_name: wso2am
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+      - JVM_MEM_OPTS=-Xms2g -Xmx2g
+    ports:
+      - "9443:9443"   # Management & portals (HTTPS)
+      - "8243:8243"   # Gateway (HTTPS)
+      - "8280:8280"   # Gateway (HTTP)
+    volumes:
+      - ./deployment.toml:/home/wso2carbon/wso2am-4.2.0/repository/conf/deployment.toml:ro
+      - wso2am-storage:/home/wso2carbon/wso2am-4.2.0/repository/deployment/server
+    networks:
+      - wso2-net
+
+networks:
+  wso2-net:
+    driver: bridge
+
+volumes:
+  wso2am-storage:
