@@ -9,8 +9,6 @@ paths:
     get:
       summary: List users
       operationId: listUsers
-      security:
-        - default: [read:users]
       responses:
         '200':
           description: Successful response
@@ -27,8 +25,6 @@ paths:
     get:
       summary: Get user by ID
       operationId: getUserById
-      security:
-        - default: [read:users]
       parameters:
         - name: id
           in: path
@@ -48,15 +44,6 @@ paths:
         '404':
           description: User not found
 components:
-  securitySchemes:
-    default:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: https://localhost:8085/authorize
-          tokenUrl: https://localhost:8085/token
-          scopes:
-            read:users: Read user data
   schemas:
     User:
       type: object
