@@ -18,9 +18,9 @@ app.use(bodyParser.json());
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-// API routes
-app.use('/api/users', jwtAuth, scopeCheck(['read:users']), usersRouter);
-app.use('/api/products', jwtAuth, scopeCheck(['read:products']), productsRouter);
+// API routes - Auth handled by WSO2 API Gateway
+app.use('/api/users', usersRouter);
+app.use('/api/products', productsRouter);
 
 // 404 handler
 app.use((req, res) => {

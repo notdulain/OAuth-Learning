@@ -15,6 +15,9 @@ proxyPort = 9443
 [apim]
 analytics_enabled = false
 
+[apim.oauth_config]
+remove_auth_headers_from_out_message = false
+
 [[apim.gateway.environment]]
 name = "Default"
 type = "hybrid"
